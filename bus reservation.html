@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bus Reservation System</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- pdf libs -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <!-- LOGIN PAGE (separate container) -->
+  <div id="loginPage" class="login-container">
+      <div class="login-header">
+          <h1>🚌 Bus Reservation</h1>
+          <p>Please login to continue</p>
+      </div>
+
+      <div class="login-tabs">
+          <button class="login-tab active" data-tab="login" onclick="toggleLoginTab('login')">Login</button>
+          <button class="login-tab" data-tab="signup" onclick="toggleLoginTab('signup')">Sign Up</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" onsubmit="event.preventDefault(); handleLogin();">
+          <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="loginEmail" name="email" placeholder="Enter your email" required>
+          </div>
+          <div class="form-group">
+              <label>Password</label>
+              <input type="password" id="loginPassword" name="password" placeholder="Enter your password" required>
+          </div>
+          <button type="submit">Login</button>
+      </form>
+
+      <!-- Signup Form -->
+      <form id="signupForm" class="hidden" onsubmit="event.preventDefault(); handleSignup();">
+          <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" id="signupName" name="name" placeholder="Enter your full name" required>
+          </div>
+          <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="signupEmail" name="email" placeholder="Enter your email" required>
+          </div>
+          <div class="form-group">
+              <label>Password</label>
+              <input type="password" id="signupPassword" name="password" placeholder="Create a password" required>
+          </div>
+          <button type="submit">Sign Up</button>
+      </form>
+
+      <div id="loginMessage"></div>
+  </div>
+
+  <!-- MAIN APP (moved OUTSIDE loginPage so it does not get hidden) -->
+  <div id="mainApp" class="container hidden">
+      <header>
+          <h1>🚌 Bus Reservation System</h1>
+          <p>Book your journey with ease</p>
+      </header>
+
+      <div class="tabs">
+          <button class="tab active" data-tab="search" onclick="showTab('search')">Search Buses</button>
+          <button class="tab" data-tab="booking" onclick="showTab('booking')">My Booking</button>
+          <button class="tab" data-tab="myReservations" onclick="showTab('myReservations')">My Reservations</button>
+          <button class="tab" data-tab="cancel" onclick="showTab('cancel')">Cancel Ticket</button>
+          <button class="tab" style="margin-left: auto;" onclick="logout()">Logout (<span id="loggedInUser"></span>)</button>
+      </div>
+
+      <!-- Search Tab -->
+      <div id="search" class="tab-content active">
+          <h2>Search for Buses</h2>
+          <div class="form-group">
+              <label>From</label>
+              <select id="fromCity">
+                  <option value="">Select City</option>
+                  <option value="Karachi">Karachi</option>
+                  <option value="Lahore">Lahore</option>
+                  <option value="Islamabad">Islamabad</option>
+                  <option value="Multan">Multan</option>
+              </select>
+          </div>
+          <div class="form-group">
+              <label>To</label>
+              <select id="toCity">
+                  <option value="">Select City</option>
+                  <option value="Karachi">Karachi</option>
+                  <option value="Lahore">Lahore</option>
+                  <option value="Islamabad">Islamabad</option>
+                  <option value="Multan">Multan</option>
+              </select>
+          </div>
+          <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="travelDate">
+          </div>
+          <button onclick="searchBuses()">Search Buses</button>
+
+          <div id="busResults" class="bus-list"></div>
+      </div>
+
+      <!-- Booking Tab -->
+      <div id="booking" class="tab-content">
+          <div id="seatSelection" class="hidden">
+              <h2>Select Your Seats</h2>
+              <p><strong>Selected Bus:</strong> <span id="selectedBusName"></span></p>
+              <p><strong>Route:</strong> <span id="selectedRoute"></span></p>
+
+              <div class="seat-grid" id="seatGrid"></div>
+
+              <div class="booking-summary">
+                  <h3>Booking Summary</h3>
+                  <div class="summary-item">
+                      <span>Selected Seats:</span>
+                      <span id="selectedSeats">None</span>
+                  </div>
+                  <div class="summary-item">
+                      <span>Price per Seat:</span>
+                      <span id="pricePerSeat">Rs. 0</span>
+                  </div>
+                  <div class="summary-item total">
+                      <span>Total Amount:</span>
+                      <span id="totalAmount">Rs. 0</span>
+                  </div>
+              </div>
+
+              <div class="form-group">
+                  <label>Passenger Name</label>
+                  <input type="text" id="passengerName" placeholder="Enter your full name">
+              </div>
+              <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" id="passengerEmail" placeholder="Enter your email">
+              </div>
+              <div class="form-group">
+                  <label>Phone</label>
+                  <input type="tel" id="passengerPhone" placeholder="Enter your phone number">
+              </div>
+
+              <h3>Select Payment Method</h3>
+              <div class="payment-methods">
+                  <div class="payment-method" onclick="selectPayment('debit')">
+                      <h4>💳 Debit Card</h4>
+                  </div>
+                  <div class="payment-method" onclick="selectPayment('cash')">
+                      <h4>💵 Cash on Board</h4>
+                  </div>
+              </div>
+
+              <button onclick="confirmBooking()">Confirm Booking</button>
+          </div>
+
+          <div id="ticketDisplay" class="hidden">
+              <div class="ticket" id="eTicket">
+                  <h2>🎫 E-Ticket</h2>
+                  <div class="ticket-info">
+                      <div class="ticket-field">
+                          <strong>Booking ID</strong>
+                          <span id="ticketBookingId"></span>
+                      </div>
+                      <div class="ticket-field">
+                          <strong>Passenger Name</strong>
+                          <span id="ticketName"></span>
+                      </div>
+                      <div class="ticket-field">
+                          <strong>Bus Name</strong>
+                          <span id="ticketBusName"></span>
+                      </div>
+                      <div class="ticket-field">
+                          <strong>Route</strong>
+                          <span id="ticketRoute"></span>
+                      </div>
+                      <div class="ticket-field">
+                          <strong>Date</strong>
+                          <span id="ticketDate"></span>
+                      </div>
+                      <div class="ticket-field">
+                          <strong>Time</strong>
+                          <span id="ticketTime"></span>
+                      </div>
+                      <div class="ticket-field">
+                          <strong>Seat Numbers</strong>
+                          <span id="ticketSeats"></span>
+                      </div>
+                      <div class="ticket-field">
+                          <strong>Total Amount</strong>
+                          <span id="ticketAmount"></span>
+                      </div>
+                      <div class="ticket-field">
+                          <strong>Payment Method</strong>
+                          <span id="ticketPayment"></span>
+                      </div>
+                      <div class="ticket-field">
+                          <strong>Email</strong>
+                          <span id="ticketEmail"></span>
+                      </div>
+                  </div>
+              </div>
+              <button onclick="window.print()">🖨️ Print Ticket</button>
+              <button onclick="downloadTicket()">📥 Download Ticket</button>
+              <button onclick="bookAnother()">Book Another Ticket</button>
+          </div>
+      </div>
+
+      <!-- Cancel Tab -->
+      <div id="cancel" class="tab-content">
+          <h2>Cancel Your Ticket</h2>
+          <div class="form-group">
+              <label>Booking ID</label>
+              <input type="text" id="cancelBookingId" placeholder="Enter your booking ID">
+          </div>
+          <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="cancelEmail" placeholder="Enter your email">
+          </div>
+          <button onclick="cancelTicket()">Cancel Ticket</button>
+          <div id="cancelMessage"></div>
+      </div>
+
+      <!-- My Reservations Tab -->
+      <div id="myReservations" class="tab-content">
+          <h2>My Reservations</h2>
+          <div id="reservationsList"></div>
+      </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
